@@ -1,0 +1,70 @@
+<!-- views/index.erb -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat</title>
+    <style>
+        #chat {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        #message {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <% if authenticated? %>
+        <h2>Welcome, <%= current_user[:username] %>!</h2>
+        <button onclick="logout()">Logout</button>
+        <div id="chat"></div>
+        <input type="text" id="message" placeholder="Type your message here...">
+        <button onclick="sendMessage()">Send</button>
+
+        <script>
+            var ws = new WebSocket('ws://' + window.location.host + window.location.pathname);
+            ws.onmessage = function(event) {
+                var chat = document.getElementById('chat');
+                var msg = JSON.parse(event.data);
+                chat.innerHTML += '<p><strong>' + msg.username + ':</strong> ' + msg.message + '</p>';
+                chat.scrollTop = chat.scrollHeight;
+            };
+
+            function sendMessage() {
+                var input = document.getElementById('message');
+                var message = input.value;
+                if (message) {
+                    ws.send(JSON.stringify({username: '<%= current_user[:username] %>', message: message}));
+                    input.value = '';
+                }
+            }
+
+            function logout() {
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/logout", true);
+                xhr.send();
+                window.location.reload();
+            }
+        </script>
+    <% else %>
+        <h2>Login</h2>
+        <form method="post" action="/login">
+            <input type="text" name="username" placeholder="Username">
+            <input type="password" name="password" placeholder="Password">
+            <button type="submit">Login</button>
+        </form>
+
+        <h2>Sign Up</h2>
+        <form method="post" action="/signup">
+            <input type="text" name="username" placeholder="Username">
+            <input type="password" name="password" placeholder="Password">
+            <input type="password" name="password_confirmation" placeholder="Confirm Password">
+            <button type="submit">Sign Up</button>
+        </form>
+    <% end %>
+</body>
+</html>
